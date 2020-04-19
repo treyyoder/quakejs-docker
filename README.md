@@ -1,7 +1,7 @@
-# quakejs-docker
+# quakejs-docker ![quakejs-docker](https://.png)
 ### A fully local and Dockerized quakejs server. Independent, unadulterated, and free from the middleman.  
 
-The goal of this project was to create a fully independent quakejs server that does not require content to be served from the internet.
+The goal of this project was to create a fully independent quakejs server in Docker that does not require content to be served from the internet.
 Hence, once pulled, this does not need to connect to any external provider, ie. content.quakejs.com. Nor does this server need to be proxied/served/relayed from http://www.quakejs.com/
 
 #### Simply pull the image [treyyoder/quakejs](https://hub.docker.com/r/treyyoder/quakejs) and run it:
