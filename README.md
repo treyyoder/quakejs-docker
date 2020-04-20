@@ -22,6 +22,25 @@ docker run -d --name quakejs -e SERVER=10.0.0.2 -e HTTP_PORT=8080 -p 8080:80 -p 
 
 Send all you friends/coworkers the link: ex. http://10.0.0.2:8080 and start fragging ;)
 
+#### server.cfc:
+Refer to [quake3world](https://www.quake3world.com/q3guide/servers.html) for instructions on its usage.
+
+#### docker-compose.yml
+```
+version: '2'
+services:
+    quakejs:
+        container_name: quakejs
+        environment:
+            - SERVER=10.0.0.2
+            - HTTP_PORT=8086
+        ports:
+            - '8086:80'
+            - '27960:27960'
+        image: 'treyyoder/quakejs:latest'
+```
+
+
 ## Credits:
 
 Thanks to [begleysm](https://github.com/begleysm) with his [fork](https://github.com/begleysm/quakejs) of [quakejs](https://github.com/inolen/quakejs) to which this was derived, aswell as his thorough [documentation](https://steamforge.net/wiki/index.php/How_to_setup_a_local_QuakeJS_server_under_Debian_9_or_Debian_10)
