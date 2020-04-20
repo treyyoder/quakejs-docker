@@ -33,9 +33,9 @@ services:
         container_name: quakejs
         environment:
             - SERVER=10.0.0.2
-            - HTTP_PORT=8086
+            - HTTP_PORT=8080
         ports:
-            - '8086:80'
+            - '8080:80'
             - '27960:27960'
         image: 'treyyoder/quakejs:latest'
 ```
