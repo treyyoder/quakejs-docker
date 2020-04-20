@@ -22,7 +22,7 @@ docker run -d --name quakejs -e SERVER=10.0.0.2 -e HTTP_PORT=8080 -p 8080:80 -p 
 
 Send all you friends/coworkers the link: ex. http://10.0.0.2:8080 and start fragging ;)
 
-#### server.cfc:
+#### server.cfg:
 Refer to [quake3world](https://www.quake3world.com/q3guide/servers.html) for instructions on its usage.
 
 #### docker-compose.yml
