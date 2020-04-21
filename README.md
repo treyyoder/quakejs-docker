@@ -2,7 +2,7 @@
     
 ![logo](https://github.com/treyyoder/quakejs-docker/blob/master/quakejs-docker.png?raw=true)
 # quakejs-docker 
-[![Docker Hub downloads](https://img.shields.io/docker/pulls/treyyoder/quakejs)
+![Docker Hub downloads](https://img.shields.io/docker/pulls/treyyoder/quakejs)
 </div>
 
 
