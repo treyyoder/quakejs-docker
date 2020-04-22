@@ -1,4 +1,12 @@
-# quakejs-docker ![quakejs-docker](https://github.com/treyyoder/quakejs-docker/blob/master/quakejs-docker.png?raw=true)
+<div align="center">
+    
+![logo](https://github.com/treyyoder/quakejs-docker/blob/master/quakejs-docker.png?raw=true)
+# quakejs-docker 
+
+![Docker Image CI](https://github.com/treyyoder/quakejs-docker/workflows/Docker%20Image%20CI/badge.svg)
+</div>
+
+
 ### A fully local and Dockerized quakejs server. Independent, unadulterated, and free from the middleman.  
 
 The goal of this project was to create a fully independent quakejs server in Docker that does not require content to be served from the internet.
@@ -22,7 +30,7 @@ docker run -d --name quakejs -e SERVER=10.0.0.2 -e HTTP_PORT=8080 -p 8080:80 -p 
 
 Send all you friends/coworkers the link: ex. http://10.0.0.2:8080 and start fragging ;)
 
-#### server.cfc:
+#### server.cfg:
 Refer to [quake3world](https://www.quake3world.com/q3guide/servers.html) for instructions on its usage.
 
 #### docker-compose.yml
@@ -33,9 +41,9 @@ services:
         container_name: quakejs
         environment:
             - SERVER=10.0.0.2
-            - HTTP_PORT=8086
+            - HTTP_PORT=8080
         ports:
-            - '8086:80'
+            - '8080:80'
             - '27960:27960'
         image: 'treyyoder/quakejs:latest'
 ```
