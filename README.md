@@ -5,8 +5,8 @@
 
 ![Docker Image CI](https://github.com/treyyoder/quakejs-docker/workflows/Docker%20Image%20CI/badge.svg)
 </div>
-
-:warning: Issues with entrypoint permissions and the refresh loop have been addressed.  Pull the lastest image from Docker Hub.
+:warning: 4/22/2020 Fixed a bug that was preventing other maps from loading.  Pull the lastest image from Docker Hub.
+:warning: 4/20/2020 Issues with entrypoint permissions and the refresh loop have been addressed.  Pull the lastest image from Docker Hub.
 
 ### A fully local and Dockerized quakejs server. Independent, unadulterated, and free from the middleman.  
 
