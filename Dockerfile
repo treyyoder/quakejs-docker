@@ -1,5 +1,5 @@
 FROM ubuntu:latest
-
+RUN apt-get install -y tzdata
 RUN apt-get update
 RUN apt-get upgrade -y
 
