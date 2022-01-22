@@ -1,5 +1,8 @@
 FROM ubuntu:latest
-RUN apt-get install -y tzdata
+
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=US/Eastern
+
 RUN apt-get update
 RUN apt-get upgrade -y
 
