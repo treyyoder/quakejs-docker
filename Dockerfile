@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ubuntu:20.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=US/Eastern
@@ -10,7 +10,8 @@ RUN apt-get install sudo curl git nodejs npm jq apache2 wget apt-utils -y
 
 RUN curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 
-RUN git clone --recurse-submodules https://github.com/begleysm/quakejs.git
+#RUN git clone --recurse-submodules https://github.com/begleysm/quakejs.git
+RUN git clone --branch fix_module https://github.com/nerosketch/quakejs.git
 WORKDIR /quakejs
 RUN npm install
 RUN ls
@@ -25,11 +26,11 @@ RUN rm /var/www/html/index.html && cp /quakejs/html/* /var/www/html/
 COPY ./include/assets/ /var/www/html/assets
 RUN ls /var/www/html
 
-RUN echo "127.0.0.1 content.quakejs.com" >> /etc/hosts
+#RUN cat /etc/hosts
 
 WORKDIR /
 ADD entrypoint.sh /entrypoint.sh
 # Was having issues with Linux and Windows compatibility with chmod -x, but this seems to work in both
-RUN chmod 777 ./entrypoint.sh
+RUN chmod 777 entrypoint.sh
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["./entrypoint.sh"]
