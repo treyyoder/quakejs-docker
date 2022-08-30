@@ -49,6 +49,12 @@ services:
         image: 'treyyoder/quakejs:latest'
 ```
 
+#### Building the Image
+After pulling the repo, change both `Dockerfile` and `entrypoint.sh` from CRLF to LF.
+
+Build the image with:
+
+`docker build --add-host=content.quakejs.com:127.0.0.1 --no-cache -t treyyoder/quake3docker:latest .`
 
 ## Credits:
 
