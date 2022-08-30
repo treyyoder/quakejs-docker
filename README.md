@@ -54,7 +54,7 @@ After pulling the repo, change both `Dockerfile` and `entrypoint.sh` from CRLF t
 
 Build the image with:
 
-`docker build --add-host=content.quakejs.com:127.0.0.1 --no-cache -t treyyoder/quake3docker:latest .`
+`docker build --add-host=content.quakejs.com:127.0.0.1 --no-cache -t treyyoder/quakejs:latest .`
 
 ## Credits:
 
