@@ -1,68 +1,60 @@
-# Stage 1: Base setup
-FROM ubuntu:20.04 AS base
+# Use current Ubuntu LTS as the base image
+FROM ubuntu:latest
 
-ARG DEBIAN_FRONTEND=noninteractive
-ENV TZ=Europe/London
-
-# Update system and install required packages
+# Update apt-get and install essential tools like curl, gpg, git, nginx, and supervisor
 RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends \
-    sudo \
-    curl \
-    git \
-    nodejs \
-    npm \
-    jq \
-    apache2 \
-    wget \
-    apt-utils && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y curl gpg git nginx supervisor
 
-# Install Node.js 12.x
-RUN curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
-    apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/*
+# Set Node.js major version for installation
+ENV NODE_MAJOR=20
 
-# Clone QuakeJS repository and install npm dependencies
-RUN git clone https://github.com/nerosketch/quakejs.git /quakejs
+# Add the NodeSource GPG key and repository for Node.js
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && apt-get install -y nodejs
+
+# Set the working directory for the QuakeJS server
 WORKDIR /quakejs
-RUN npm install
 
-# Stage 2: Copy static files
-FROM base AS builder
+# Clone the QuakeJS server repository and install dependencies
+RUN git clone https://github.com/begleysm/quakejs . && \
+    npm install
 
-# Copy assets and configuration files
+# Copy server configuration files
+COPY server.cfg /quakejs/base/baseq3/
+COPY server.cfg /quakejs/base/cpma/
+
+# Replace the fixed JavaScript file for ioq3ded
 COPY ./include/ioq3ded/ioq3ded.fixed.js /quakejs/build/ioq3ded.js
+
+# Modify the QuakeJS HTML to dynamically set the hostname and protocol for resources
+RUN sed -i "s#'quakejs:[0-9]\+'#window.location.hostname#g" /quakejs/html/index.html && \
+    sed -i "s#var url = 'http://' + fs_cdn + '/assets/manifest.json';#var url = '//' + window.location.host + '/assets/manifest.json';#" /quakejs/html/ioquake3.js && \
+    sed -i "s#var url = 'http://' + root + '/assets/' + name;#var url = '//' + window.location.host + '/assets/' + name;#" /quakejs/html/ioquake3.js && \
+    sed -i "s#var url = 'ws://' + addr + ':' + port;#var url = window.location.protocol.replace('http', 'ws') + window.location.host;#" /quakejs/html/ioquake3.js
+
+# Link QuakeJS to the nginx web root
+RUN rm -rf /var/www/html && ln -s /quakejs/html /var/www/html
+
+# Copy game assets to the web root
 COPY ./include/assets/ /var/www/html/assets
-RUN rm /var/www/html/index.html && \
-    cp /quakejs/html/* /var/www/html/
 
-# Stage 3: Final stage (lightweight runtime)
-FROM ubuntu:20.04
-
-# Set non-interactive frontend and timezone
-ARG DEBIAN_FRONTEND=noninteractive
-ENV TZ=Europe/London
-
-# Install only runtime dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    apache2 \
-    nodejs \
-    npm && \
+# Remove unnecessary packages to reduce image size
+RUN apt-get purge curl gpg git -y && \
+    apt-get autoremove -y && \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy necessary files from the builder stage
-COPY --from=builder /quakejs /quakejs
-COPY --from=builder /var/www/html /var/www/html
+# Configure supervisord and nginx
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY nginx.conf /etc/nginx/sites-available/default
 
-# Copy and set up server configuration files
-COPY server.cfg /quakejs/base/baseq3/server.cfg
-COPY server.cfg /quakejs/base/cpma/server.cfg
+# Create a non-root user for running the QuakeJS server
+RUN groupadd -r quakejs && useradd -r -g quakejs quakejs
 
-# Add entrypoint script and ensure it is executable
-ADD entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Set permissions for the QuakeJS server and web root
+RUN chown -R quakejs:quakejs /quakejs /var/www/html
 
-ENTRYPOINT ["/entrypoint.sh"]
+# Start the supervisor daemon
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
