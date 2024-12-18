@@ -1,33 +1,68 @@
-FROM ubuntu:20.04
+# Stage 1: Base setup
+FROM ubuntu:20.04 AS base
 
 ARG DEBIAN_FRONTEND=noninteractive
-ENV TZ=US/Eastern
+ENV TZ=Europe/London
 
-RUN apt-get update
-RUN apt-get upgrade -y
+# Update system and install required packages
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+    sudo \
+    curl \
+    git \
+    nodejs \
+    npm \
+    jq \
+    apache2 \
+    wget \
+    apt-utils && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN apt-get install sudo curl git nodejs npm jq apache2 wget apt-utils -y
+# Install Node.js 12.x
+RUN curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-
-RUN git clone https://github.com/nerosketch/quakejs.git
+# Clone QuakeJS repository and install npm dependencies
+RUN git clone https://github.com/nerosketch/quakejs.git /quakejs
 WORKDIR /quakejs
 RUN npm install
-RUN ls
+
+# Stage 2: Copy static files
+FROM base AS builder
+
+# Copy assets and configuration files
+COPY ./include/ioq3ded/ioq3ded.fixed.js /quakejs/build/ioq3ded.js
+COPY ./include/assets/ /var/www/html/assets
+RUN rm /var/www/html/index.html && \
+    cp /quakejs/html/* /var/www/html/
+
+# Stage 3: Final stage (lightweight runtime)
+FROM ubuntu:20.04
+
+# Set non-interactive frontend and timezone
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=Europe/London
+
+# Install only runtime dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    apache2 \
+    nodejs \
+    npm && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy necessary files from the builder stage
+COPY --from=builder /quakejs /quakejs
+COPY --from=builder /var/www/html /var/www/html
+
+# Copy and set up server configuration files
 COPY server.cfg /quakejs/base/baseq3/server.cfg
 COPY server.cfg /quakejs/base/cpma/server.cfg
-# The two following lines are not necessary because we copy assets from include.  Leaving them here for continuity.
-# WORKDIR /var/www/html
-# RUN bash /var/www/html/get_assets.sh
-COPY ./include/ioq3ded/ioq3ded.fixed.js /quakejs/build/ioq3ded.js
 
-RUN rm /var/www/html/index.html && cp /quakejs/html/* /var/www/html/
-COPY ./include/assets/ /var/www/html/assets
-RUN ls /var/www/html
-
-WORKDIR /
+# Add entrypoint script and ensure it is executable
 ADD entrypoint.sh /entrypoint.sh
-# Was having issues with Linux and Windows compatibility with chmod -x, but this seems to work in both
-RUN chmod 777 ./entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
