@@ -10,4 +10,4 @@ sed -i "s/':80'/':${HTTP_PORT}'/g" index.html
 
 cd /quakejs
 
-node build/ioq3ded.js +set fs_game baseq3 set dedicated 1 +exec server.cfg
+node build/ioq3ded.js +set fs_game baseq3 +set dedicated 1 +set fs_cdn 127.0.0.1 +exec server.cfg
