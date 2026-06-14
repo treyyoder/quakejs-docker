@@ -1,33 +1,50 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
-ENV TZ=US/Eastern
+ARG QUAKEJS_REPO=https://github.com/nerosketch/quakejs.git
+ARG QUAKEJS_REF=master
+ARG NODE_MAJOR=22
 
-RUN apt-get update
-RUN apt-get upgrade -y
+ENV TZ=UTC
+ENV HTTP_PORT=8080
 
-RUN apt-get install sudo curl git nodejs npm jq apache2 wget apt-utils -y
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-RUN curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends \
+		apache2 \
+		ca-certificates \
+		curl \
+		git \
+		gnupg \
+		jq \
+		wget \
+	&& curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - \
+	&& apt-get install -y --no-install-recommends nodejs \
+	&& rm -rf /var/lib/apt/lists/*
 
-RUN git clone https://github.com/nerosketch/quakejs.git
+RUN git clone --depth 1 --branch "${QUAKEJS_REF}" "${QUAKEJS_REPO}" /quakejs
+
 WORKDIR /quakejs
-RUN npm install
-RUN ls
+RUN jq 'del(.dependencies["quakejs-files"]) | del(.devDependencies["quakejs-files"])' package.json > /tmp/package.json \
+	&& mv /tmp/package.json package.json \
+	&& npm install --legacy-peer-deps
+
 COPY server.cfg /quakejs/base/baseq3/server.cfg
 COPY server.cfg /quakejs/base/cpma/server.cfg
-# The two following lines are not necessary because we copy assets from include.  Leaving them here for continuity.
-# WORKDIR /var/www/html
-# RUN bash /var/www/html/get_assets.sh
-COPY ./include/ioq3ded/ioq3ded.fixed.js /quakejs/build/ioq3ded.js
+COPY include/ioq3ded/ioq3ded.fixed.js /quakejs/build/ioq3ded.js
 
-RUN rm /var/www/html/index.html && cp /quakejs/html/* /var/www/html/
-COPY ./include/assets/ /var/www/html/assets
-RUN ls /var/www/html
+RUN rm -f /var/www/html/index.html \
+	&& cp -r /quakejs/html/. /var/www/html/
+COPY include/assets/ /var/www/html/assets
 
 WORKDIR /
-ADD entrypoint.sh /entrypoint.sh
-# Was having issues with Linux and Windows compatibility with chmod -x, but this seems to work in both
-RUN chmod 777 ./entrypoint.sh
+COPY --chmod=755 entrypoint.sh /entrypoint.sh
+
+EXPOSE 80
+EXPOSE 27960
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+	CMD curl --fail --silent --show-error http://localhost/ > /dev/null || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]

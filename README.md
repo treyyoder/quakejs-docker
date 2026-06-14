@@ -1,58 +1,77 @@
 <div align="center">
-    
-![logo](https://github.com/treyyoder/quakejs-docker/blob/master/quakejs-docker.png?raw=true)
-# quakejs-docker 
 
-![Docker Image CI](https://github.com/treyyoder/quakejs-docker/workflows/Docker%20Image%20CI/badge.svg)
+![logo](https://github.com/treyyoder/quakejs-docker/blob/master/quakejs-docker.png?raw=true)
+# quakejs-docker
+
+![Docker Image CI](https://github.com/treyyoder/quakejs-docker/actions/workflows/dockerimage.yml/badge.svg)
 </div>
 
-### A fully local and Dockerized quakejs server. Independent, unadulterated, and free from the middleman.  
+Fully local and Dockerized QuakeJS server. This project bundles assets and server binaries so gameplay does not depend on content.quakejs.com.
 
-The goal of this project was to create a fully independent quakejs server in Docker that does not require content to be served from the internet.
-Hence, once pulled, this does not need to connect to any external provider, ie. content.quakejs.com. Nor does this server need to be proxied/served/relayed from quakejs.com
+## Quick Start (Docker Compose)
 
-#### Simply pull the image [treyyoder/quakejs](https://hub.docker.com/r/treyyoder/quakejs)
-```
-docker pull treyyoder/quakejs:latest
-```
-#### and run it:
+From the repository root:
 
-```
-docker run -d --name quakejs -e HTTP_PORT=<HTTP_PORT> -p <HTTP_PORT>:80 -p 27960:27960 treyyoder/quakejs:latest
+```bash
+docker compose up --build -d
 ```
 
-#### Example:
+Then open:
 
+```text
+http://localhost:8080
 ```
+
+To stop:
+
+```bash
+docker compose down
+```
+
+## Quick Start (Docker Run)
+
+Build locally:
+
+```bash
+docker build -t treyyoder/quakejs:latest .
+```
+
+Run:
+
+```bash
 docker run -d --name quakejs -e HTTP_PORT=8080 -p 8080:80 -p 27960:27960 treyyoder/quakejs:latest
 ```
 
-Send all you friends/coworkers the link: ex. http://localhost:8080 and start fragging ;)
+## Configuration
 
-#### server.cfg:
-Refer to [quake3world](https://www.quake3world.com/q3guide/servers.html) for instructions on its usage.
+- Main game settings live in [server.cfg](server.cfg).
+- Remote administration is disabled by default. Set a strong `rconpassword` in [server.cfg](server.cfg) before enabling it.
+- See Quake 3 server variable reference at https://www.quake3world.com/q3guide/servers.html.
 
-#### docker-compose.yml
+## Non-Docker Testing
+
+You can run this project without Docker by reproducing the container steps:
+
+1. Clone https://github.com/nerosketch/quakejs and run npm install.
+2. Copy [server.cfg](server.cfg) into both quakejs/base/baseq3/server.cfg and quakejs/base/cpma/server.cfg.
+3. Copy [include/ioq3ded/ioq3ded.fixed.js](include/ioq3ded/ioq3ded.fixed.js) to quakejs/build/ioq3ded.js.
+4. Copy [include/assets](include/assets) into quakejs/html/assets.
+5. Update quakejs/html/index.html host/port in the same way [entrypoint.sh](entrypoint.sh) does.
+6. Serve quakejs/html on your desired HTTP port and run:
+
+```bash
+node build/ioq3ded.js +set fs_cdn localhost:8080 +set fs_game baseq3 +set dedicated 1 +exec server.cfg
 ```
-version: '2'
-services:
-    quakejs:
-        container_name: quakejs
-        environment:
-            - HTTP_PORT=8080
-        ports:
-            - '8080:80'
-            - '27960:27960'
-        image: 'treyyoder/quakejs:latest'
-```
 
-#### Building the Image
-After pulling the repo, change both `Dockerfile` and `entrypoint.sh` from CRLF to LF.
+## Notes
 
-Build the image with:
+- This repo targets current Docker Compose syntax (no compose file version key).
+- The container installs Node 22 by default (configurable via Docker build argument NODE_MAJOR).
+- Port 27960 is TCP because QuakeJS browser clients connect to the game server over WebSockets.
 
-`docker build --add-host=content.quakejs.com:127.0.0.1 -t treyyoder/quakejs:latest .`
+## Credits
 
-## Credits:
+Thanks to begleysm and their QuakeJS fork/documentation:
 
-Thanks to [begleysm](https://github.com/begleysm) with his [fork](https://github.com/begleysm/quakejs) of [quakejs](https://github.com/inolen/quakejs) to which this was derived, aswell as his thorough [documentation](https://steamforge.net/wiki/index.php/How_to_setup_a_local_QuakeJS_server_under_Debian_9_or_Debian_10)
+- https://github.com/begleysm/quakejs
+- https://steamforge.net/wiki/index.php/How_to_setup_a_local_QuakeJS_server_under_Debian_9_or_Debian_10
