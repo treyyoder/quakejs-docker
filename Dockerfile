@@ -6,7 +6,6 @@ ARG QUAKEJS_REF=master
 ARG NODE_MAJOR=22
 
 ENV TZ=UTC
-ENV HTTP_PORT=8080
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -21,6 +20,7 @@ RUN apt-get update \
 		wget \
 	&& curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - \
 	&& apt-get install -y --no-install-recommends nodejs \
+	&& a2enmod -q proxy proxy_wstunnel rewrite \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN git clone --depth 1 --branch "${QUAKEJS_REF}" "${QUAKEJS_REPO}" /quakejs
@@ -35,7 +35,16 @@ COPY server.cfg /quakejs/base/cpma/server.cfg
 COPY include/ioq3ded/ioq3ded.fixed.js /quakejs/build/ioq3ded.js
 
 RUN rm -f /var/www/html/index.html \
-	&& cp -r /quakejs/html/. /var/www/html/
+	&& cp -r /quakejs/html/. /var/www/html/ \
+	# scheme-relative asset URLs + wss when the page is served over HTTPS
+	&& sed -i "s|'http://' + root|'//' + root|g" /var/www/html/ioquake3.js \
+	&& sed -i "s|'http://' + fs_cdn|'//' + fs_cdn|g" /var/www/html/ioquake3.js \
+	&& sed -i "s|'ws://' + addr|((typeof location !== 'undefined' \&\& location.protocol === 'https:') ? 'wss://' : 'ws://') + addr|g" /var/www/html/ioquake3.js \
+	&& grep -q "wss://" /var/www/html/ioquake3.js \
+	&& ! grep -q "'http://' + fs_cdn" /var/www/html/ioquake3.js \
+	# route websocket upgrades on port 80 to the game server so one published port carries everything
+	&& sed -i 's#</VirtualHost>#\tRewriteEngine On\n\tRewriteCond %{HTTP:Upgrade} =websocket [NC]\n\tRewriteRule ^/(.*)$ ws://127.0.0.1:27960/$1 [P,L]\n</VirtualHost>#' /etc/apache2/sites-available/000-default.conf \
+	&& apache2ctl configtest
 COPY include/assets/ /var/www/html/assets
 
 WORKDIR /
