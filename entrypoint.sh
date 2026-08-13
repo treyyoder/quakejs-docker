@@ -1,11 +1,12 @@
 #!/bin/sh
 set -eu
 
-HTTP_PORT="${HTTP_PORT:-8080}"
-
+# Rewrite the client args so they adapt to whatever origin the browser used:
+# assets come from the page's own host:port, and the game connects over the same
+# port (Apache proxies websocket upgrades to the internal game server on 27960).
 cd /var/www/html
-sed -i "s/'quakejs:/window.location.hostname + ':/g" index.html
-sed -i "s/':80'/':${HTTP_PORT}'/g" index.html
+sed -i "s/'quakejs:80'/window.location.host/g" index.html
+sed -i "s/'quakejs:27960'/window.location.hostname + ':' + (window.location.port || (window.location.protocol === 'https:' ? '443' : '80'))/g" index.html
 
 /etc/init.d/apache2 start
 

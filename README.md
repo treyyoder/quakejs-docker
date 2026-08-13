@@ -39,12 +39,13 @@ docker build -t treyyoder/quakejs:latest .
 Run:
 
 ```bash
-docker run -d --name quakejs -e HTTP_PORT=8080 -p 8080:80 -p 27960:27960 treyyoder/quakejs:latest
+docker run -d --name quakejs -p 8080:80 treyyoder/quakejs:latest
 ```
 
 ## Configuration
 
-- `HTTP_PORT` is the host-side HTTP port that gets baked into the client page at container start; it must match the host side of the port mapping (e.g. `-p 8080:80` with `HTTP_PORT=8080`). Inside the container the web server always listens on port 80.
+- A single published port carries everything: the page, the game assets, and the game itself. The client adapts to whatever origin the browser used (any host, any port, HTTP or HTTPS), and Apache inside the container proxies websocket upgrades to the internal game server on 27960 — so no second port mapping is needed and the game works behind a TLS-terminating reverse proxy over `wss://`.
+- The `HTTP_PORT` environment variable from older versions is gone; no configuration is needed for the page to find its server.
 - Main game settings live in [server.cfg](server.cfg).
 - Remote administration is disabled by default. Set a strong `rconpassword` in [server.cfg](server.cfg) before enabling it.
 - See Quake 3 server variable reference at https://www.quake3world.com/q3guide/servers.html.
@@ -68,7 +69,7 @@ node build/ioq3ded.js +set fs_cdn localhost:8080 +set fs_game baseq3 +set dedica
 
 - This repo targets current Docker Compose syntax (no compose file version key).
 - The container installs Node 22 by default (configurable via Docker build argument NODE_MAJOR).
-- Port 27960 is TCP because QuakeJS browser clients connect to the game server over WebSockets.
+- The game server listens on TCP 27960 inside the container (QuakeJS clients connect over WebSockets), but browser traffic reaches it through the published HTTP port via Apache's websocket proxy. Publish `-p 27960:27960` additionally only if something needs to hit the game socket directly.
 
 ## Credits
 
