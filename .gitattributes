@@ -3,3 +3,4 @@ Dockerfile text eol=lf
 entrypoint.sh text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+*.cfg text eol=lf

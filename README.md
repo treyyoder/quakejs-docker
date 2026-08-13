@@ -44,6 +44,7 @@ docker run -d --name quakejs -e HTTP_PORT=8080 -p 8080:80 -p 27960:27960 treyyod
 
 ## Configuration
 
+- `HTTP_PORT` is the host-side HTTP port that gets baked into the client page at container start; it must match the host side of the port mapping (e.g. `-p 8080:80` with `HTTP_PORT=8080`). Inside the container the web server always listens on port 80.
 - Main game settings live in [server.cfg](server.cfg).
 - Remote administration is disabled by default. Set a strong `rconpassword` in [server.cfg](server.cfg) before enabling it.
 - See Quake 3 server variable reference at https://www.quake3world.com/q3guide/servers.html.
