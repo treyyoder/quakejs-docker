@@ -44,7 +44,8 @@ COPY --chmod=755 entrypoint.sh /entrypoint.sh
 EXPOSE 80
 EXPOSE 27960
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-	CMD curl --fail --silent --show-error http://localhost/ > /dev/null || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+	CMD bash -c "curl --fail --silent --show-error http://localhost/ > /dev/null \
+	&& : < /dev/tcp/127.0.0.1/27960" || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
