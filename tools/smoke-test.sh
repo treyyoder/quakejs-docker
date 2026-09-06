@@ -936,22 +936,15 @@ grep -q 'cosign sign' .github/workflows/dockerimage.yml || fail "CI does not sig
 ok "base image pinned by digest, node pinned per architecture, CI builds both and signs"
 
 # --- crash notes ---------------------------------------------------------------
-# The line the engine prints on its way down, appended to the console log: the
-# tailer keeps the log's tail before the watchdog's restart empties it. Late,
-# because that restart takes the game server away for a while.
-# The same line also trips the watchdog, which restarts the server and empties
-# the log, so the write races the restart; re-inject each poll (as root, and
-# tolerant of a failed write) until the tailer has recorded the note.
+# "Server crashed:" in the console log makes the tailer keep the log's tail as a
+# crash note. The write goes in as quake, which owns the log: root in some
+# daemons (GitHub Actions) runs without CAP_DAC_OVERRIDE and cannot write a file
+# it does not own. The same line trips the watchdog into a restart that empties
+# the log, so re-inject each poll until the tailer has recorded the note.
 deadline=$((SECONDS + 60))
 until api /api/crashes | grep -q '"reason": "smoke test crash"'; do
-	if [ $SECONDS -ge $deadline ]; then
-		echo "--- crash-test diagnostics ---"
-		docker exec -u root "$NAME" sh -c 'id; ls -ld /tmp; ls -l /tmp/q3.log 2>&1; echo probe >> /tmp/q3.log && echo PROBE_WRITE_OK || echo PROBE_WRITE_FAIL' 2>&1
-		docker inspect "$NAME" --format "health={{.State.Health.Status}} running={{.State.Running}}"
-		api /api/crashes
-		fail "the crash was not recorded"
-	fi
-	docker exec -u root "$NAME" sh -c 'echo "----- Server Shutdown (Server crashed: smoke test crash" >> /tmp/q3.log' 2>&1 | sed 's/^/  inject: /' || true
+	[ $SECONDS -lt $deadline ] || fail "the crash was not recorded"
+	docker exec -u quake "$NAME" sh -c 'echo "----- Server Shutdown (Server crashed: smoke test crash" >> /tmp/q3.log' 2>/dev/null || true
 	sleep 2
 done
 api /api/crashes | python3 -c "import json,sys; c=json.load(sys.stdin)['crashes'][0]; assert c['tail'] and c['map'], c" || fail "the crash note lacks the log tail or the map"
