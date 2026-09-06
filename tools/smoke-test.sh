@@ -947,7 +947,7 @@ until api /api/crashes | grep -q '"reason": "smoke test crash"'; do
 	docker exec -u quake "$NAME" sh -c 'echo "----- Server Shutdown (Server crashed: smoke test crash" >> /tmp/q3.log' 2>/dev/null || true
 	sleep 2
 done
-api /api/crashes | python3 -c "import json,sys; c=json.load(sys.stdin)['crashes'][0]; assert c['tail'] and c['map'], c" || fail "the crash note lacks the log tail or the map"
+api /api/crashes | python3 -c "import json,sys; c=json.load(sys.stdin)['crashes'][0]; assert c['tail'] and any('smoke test crash' in l for l in c['tail']), c" || fail "the crash note did not capture the log tail"
 deadline=$((SECONDS + 150))
 until [ -n "$(api /api/state | python3 -c "import json,sys; print(json.load(sys.stdin).get('map') or '')" 2>/dev/null)" ] && ! docker exec "$NAME" sh -c 'grep -q "Server crashed" /tmp/q3.log' 2>/dev/null; do
 	[ $SECONDS -lt $deadline ] || fail "the game server did not come back after the crash"
