@@ -1,0 +1,62 @@
+/* The front page: what the console's dark palette looks like as a lobby.
+   Everything a visitor sees before the game loads lives here. */
+:root {
+  --bg: #14100e; --panel: #1e1917; --line: #3a302b; --text: #e8ded6;
+  --muted: #9a8b80; --accent: #e0662a; --accent-dark: #b34d1b; --ok: #7ea55a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.5 "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace; }
+a { color: var(--accent); }
+main { max-width: 64rem; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
+header h1 { margin: 0; font-size: 1.8rem; letter-spacing: .04em; color: var(--accent); }
+header h1 a { color: inherit; text-decoration: none; }
+header h1 a:hover { text-decoration: underline; }
+header .sub { margin: .25rem 0 1.5rem; color: var(--muted); }
+.server { margin: -1rem 0 1.5rem; font-size: .8rem; }
+
+.hero { display: grid; grid-template-columns: minmax(0, 3fr) minmax(14rem, 2fr); gap: 1.25rem;
+  align-items: stretch; margin-bottom: 1.5rem; }
+.shotbox { position: relative; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; overflow: hidden; min-height: 14rem; }
+.shot { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.now { position: absolute; left: 0; right: 0; bottom: 0; padding: .6rem .9rem;
+  background: linear-gradient(transparent, rgba(20, 16, 14, .92)); }
+.now .label { display: block; font-size: .68rem; text-transform: uppercase; letter-spacing: .12em;
+  color: var(--muted); }
+.now strong { font-size: 1.3rem; color: var(--text); }
+.cta { display: flex; flex-direction: column; justify-content: center; gap: .6rem; }
+.playas { display: flex; align-items: center; gap: .6rem; font-size: .8rem; color: var(--muted); }
+.playas input { flex: 1; min-width: 0; background: var(--bg); color: var(--text); border: 1px solid var(--line);
+  border-radius: 4px; padding: .5rem .6rem; font: inherit; font-size: .95rem; }
+.playas input:focus { outline: none; border-color: var(--accent); }
+.join { display: block; text-align: center; padding: 1rem 1.25rem; border-radius: 6px;
+  background: var(--accent); color: #fff; text-decoration: none; font-weight: 600;
+  font-size: 1.15rem; letter-spacing: .03em; }
+.join:hover { background: var(--accent-dark); }
+.hint { margin: 0; color: var(--muted); font-size: .8rem; }
+kbd { border: 1px solid var(--line); border-radius: 3px; padding: 0 .3rem; font-size: .85em; }
+
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: .9rem 1rem; }
+h2 { margin: 0 0 .6rem; font-size: .72rem; text-transform: uppercase; letter-spacing: .12em;
+  color: var(--muted); }
+.tag { font-size: .66rem; padding: .05rem .35rem; border-radius: 3px; border: 1px solid var(--line);
+  color: var(--muted); vertical-align: middle; }
+.tag.bot { color: var(--accent); }
+.tag:empty { display: none; }
+ul { list-style: none; margin: 0; padding: 0; }
+li { padding: .25rem 0; border-bottom: 1px solid var(--line); }
+li:last-child { border-bottom: 0; }
+.muted { color: var(--muted); }
+table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+th { text-align: left; font-weight: 500; color: var(--muted); font-size: .7rem; text-transform: uppercase;
+  letter-spacing: .08em; padding: .2rem .35rem; border-bottom: 1px solid var(--line); }
+td { padding: .3rem .35rem; border-bottom: 1px solid var(--line); }
+td.n, th.n { text-align: right; }
+tr:last-child td { border-bottom: 0; }
+footer { margin-top: 1.5rem; display: flex; gap: 1rem; align-items: baseline; font-size: .8rem; }
+
+@media (max-width: 40rem) {
+  .hero, .cols { grid-template-columns: 1fr; }
+}

@@ -6,21 +6,68 @@ on:
   pull_request:
     branches: [ main, master ]
 
+# Keyless signing needs an OIDC token; nothing here writes to the repository.
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # arm64 is built under emulation; the smoke test runs on the native image.
+      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
+
+      - name: Build the amd64 image for testing
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: quakejs:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Runs the image and checks the failures that have actually shipped before:
+      # the websocket tunnel, client asset origins, custom maps loading through
+      # the manifest, bundled-map textures, console auth, and the rest of what
+      # tools/smoke-test.sh lists. The unit tests already ran inside the build.
+      - name: Smoke test the image
+        run: tools/smoke-test.sh quakejs:ci
+
       - name: Log in to Docker Hub
         if: github.event_name == 'push'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build the Docker image (push to Docker Hub on master)
+
+      # The same Dockerfile for both architectures, as one manifest list. Tagged
+      # with the commit as well as latest, so a deployment can pin what it runs.
+      - name: Build and push the tested image for amd64 and arm64
+        if: github.event_name == 'push'
+        id: push
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: ${{ github.event_name == 'push' }}
-          tags: treyyoder/quakejs:latest
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            treyyoder/quakejs:latest
+            treyyoder/quakejs:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Keyless: the signature is bound to this workflow's identity through
+      # GitHub's OIDC token and recorded in the public Rekor log. To verify:
+      #   cosign verify treyyoder/quakejs:latest \
+      #     --certificate-identity-regexp 'https://github.com/treyyoder/quakejs-docker/' \
+      #     --certificate-oidc-issuer https://token.actions.githubusercontent.com
+      - uses: sigstore/cosign-installer@v3
+        if: github.event_name == 'push'
+      - name: Sign the pushed image by digest
+        if: github.event_name == 'push'
+        run: cosign sign --yes "treyyoder/quakejs@${{ steps.push.outputs.digest }}"

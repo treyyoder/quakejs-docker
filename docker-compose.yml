@@ -6,5 +6,37 @@ services:
             dockerfile: Dockerfile
         image: treyyoder/quakejs:latest
         restart: unless-stopped
+        environment:
+            # Leave this unset and a password is generated on the first start,
+            # kept in the state volume, and printed once in the log:
+            #   docker compose logs quakejs | grep generated
+            # Set it in the shell or in .env to choose your own; anyone with it has
+            # full control of the game server. An explicit empty string disables
+            # the console. (A bare name passes the variable through only when it
+            # is set, so 'unset' reaches the container as unset, not as empty.)
+            - ADMIN_PASSWORD
+            # Reverse proxies in front of this container (nginx-proxy-manager,
+            # Cloudflare, a load balancer). Players' real addresses are read from
+            # X-Forwarded-For, and these hops are skipped while doing so, so kicks
+            # and bans land on the player rather than on the proxy. Getting this
+            # wrong is not a security hole, it just makes bans useless again.
+            - TRUSTED_PROXIES=${TRUSTED_PROXIES:-}
+            # Optional: a Discord or Slack webhook to ping when somebody starts
+            # playing on an empty server. Left unset, nothing is sent anywhere.
+            - NOTIFY_WEBHOOK=${NOTIFY_WEBHOOK:-}
+            # Your own licensed Quake 3 pak0.pk3, pulled at start. The image never
+            # ships it. You can also upload it from the console instead.
+            - EXTRA_PAKS=${EXTRA_PAKS:-}
         ports:
             - "8080:80"
+        volumes:
+            # Persist maps installed through the console across redeploys.
+            - quakejs-assets:/var/www/html/assets
+            # Persist the console password, generated or set from the console.
+            # Without this a new one is generated (or ADMIN_PASSWORD applies)
+            # whenever the container is recreated.
+            - quakejs-state:/var/lib/quakejs
+
+volumes:
+    quakejs-assets:
+    quakejs-state:

@@ -9918,7 +9918,62 @@ function copyTempDouble(ptr) {
           SOCKFS.nextname.current = 0;
         }
         return 'socket[' + (SOCKFS.nextname.current++) + ']';
-      },websocket_sock_ops:{createPeer:function (sock, addr, port) {
+      },websocket_sock_ops:{trustedProxies:null,realClientAddress:function (ws, direct) {
+          // Every browser reaches this server through the local Apache
+          // websocket proxy, so remoteAddress is that proxy for all of them:
+          // the engine sees one address for the entire server, and a single
+          // "addip" ban then locks everybody out. Recover the real address
+          // from X-Forwarded-For.
+          var peer = String(direct || '').trim().replace(/^::ffff:/, '');
+          // Only our own proxy may name an address on a client's behalf. A
+          // connection that did not arrive over loopback was not proxied, so
+          // its headers came straight from the client and prove nothing.
+          if (peer !== '127.0.0.1' && peer !== '::1') {
+            return peer || direct;
+          }
+          var header = ws.upgradeReq && ws.upgradeReq.headers &&
+            ws.upgradeReq.headers['x-forwarded-for'];
+          if (!header) {
+            return peer;
+          }
+          var trusted = SOCKFS.websocket_sock_ops.trustedProxies;
+          if (!trusted) {
+            trusted = SOCKFS.websocket_sock_ops.trustedProxies = [];
+            var configured = (typeof process !== 'undefined' && process.env &&
+              process.env['TRUSTED_PROXIES']) || '';
+            configured.split(/[\s,]+/).forEach(function (entry) {
+              var cidr = /^(\d+)\.(\d+)\.(\d+)\.(\d+)(?:\/(\d+))?$/.exec(entry);
+              if (!cidr) return;
+              var bits = cidr[5] === undefined ? 32 : Math.min(32, parseInt(cidr[5], 10));
+              var mask = bits === 0 ? 0 : (0xffffffff << (32 - bits)) >>> 0;
+              var net = ((((+cidr[1]) << 24) | ((+cidr[2]) << 16) |
+                ((+cidr[3]) << 8) | (+cidr[4])) >>> 0) & mask;
+              trusted.push([net >>> 0, mask]);
+            });
+          }
+          function packed(ip) {
+            var quad = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(ip);
+            if (!quad) return null;
+            return ((((+quad[1]) << 24) | ((+quad[2]) << 16) |
+              ((+quad[3]) << 8) | (+quad[4])) >>> 0);
+          }
+          // The rightmost entry is the one our own proxy appended, so it is
+          // the only address the client could not have written itself. Walk
+          // left past any further proxies we were told to trust; the first
+          // untrusted address is the client.
+          var hops = String(header).split(',');
+          for (var i = hops.length - 1; i >= 0; i--) {
+            var hop = hops[i].trim().replace(/^::ffff:/, '');
+            var value = packed(hop);
+            if (value === null) break;
+            var skip = false;
+            for (var j = 0; j < trusted.length; j++) {
+              if (((value & trusted[j][1]) >>> 0) === trusted[j][0]) { skip = true; break; }
+            }
+            if (!skip) return hop;
+          }
+          return peer;
+        },createPeer:function (sock, addr, port) {
           var ws;
   
           if (typeof addr === 'object') {
@@ -9931,7 +9986,7 @@ function copyTempDouble(ptr) {
             // for sockets that've already connected (e.g. we're the server)
             // we can inspect the _socket property for the address
             if (ws._socket) {
-              addr = ws._socket.remoteAddress;
+              addr = SOCKFS.websocket_sock_ops.realClientAddress(ws, ws._socket.remoteAddress);
               port = ws._socket.remotePort;
             }
             // if we're just now initializing a connection to the remote,

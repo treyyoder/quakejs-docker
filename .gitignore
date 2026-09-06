@@ -1,2 +1,17 @@
 quakejs
-docs
+# docs is scratch space, except the screenshots the README's user guide shows.
+# (A directory excluded outright cannot have a child re-included, hence the *.)
+docs/*
+!docs/screenshots/
+# Maps added locally - through the admin console or tools/add-map.py - stay out
+# of the repository. gitignore only applies to untracked paths, so the maps
+# already committed here are unaffected; only newly added pk3s are ignored.
+include/assets/*/*.pk3
+
+# Prepared copies of licensed game content (tools/add-retail.py). These are
+# yours to host or upload; they must never be committed or shipped in an image.
+dist/
+
+# Python leaves these beside the scripts when they are imported for testing.
+__pycache__/
+*.pyc

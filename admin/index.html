@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuakeJS-Docker admin console</title>
+<link rel="stylesheet" href="console.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <span class="spacer"></span>
+    <button type="button" class="linkish" id="adminlogin">Admin login</button>
+    <button type="button" class="linkish" id="changepw" hidden>Change password</button>
+    <button type="button" class="linkish" id="signout" hidden>Sign out</button>
+  </div>
+  <p class="status" id="status">Sign in to control the dedicated server.</p>
+
+  <section class="panel" id="signin" hidden>
+    <h2>Sign in</h2>
+    <form id="signinform">
+      <div class="field"><label for="user">User</label>
+        <input id="user" autocomplete="username" value="admin"></div>
+      <div class="field"><label for="pass">Password</label>
+        <input id="pass" type="password" autocomplete="current-password"></div>
+      <button type="submit" id="signinbtn">Sign in</button>
+      <button type="button" class="ghost" id="signincancel">Back</button>
+    </form>
+    <div class="msg" id="signinmsg"></div>
+  </section>
+
+  <section class="panel" id="pwpanel" hidden>
+    <h2>Change password</h2>
+    <form id="pwform">
+      <div class="field"><label for="pwcur">Current password</label>
+        <input id="pwcur" type="password" autocomplete="current-password"></div>
+      <div class="field"><label for="pwnew">New password</label>
+        <input id="pwnew" type="password" autocomplete="new-password"></div>
+      <div class="field"><label for="pwconf">Confirm</label>
+        <input id="pwconf" type="password" autocomplete="new-password"></div>
+      <button type="submit">Save</button>
+      <button type="button" class="ghost" id="pwcancel">Cancel</button>
+    </form>
+    <div class="msg" id="pwmsg"></div>
+  </section>
+
+  <div id="main" hidden>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="chat" aria-selected="true">Chat</button>
+      <button role="tab" data-tab="stats" aria-selected="false">Stats</button>
+      <button role="tab" data-tab="server" aria-selected="false" data-admin>Server</button>
+      <button role="tab" data-tab="match" aria-selected="false" data-admin>Match</button>
+      <button role="tab" data-tab="players" aria-selected="false" data-admin>Players</button>
+      <button role="tab" data-tab="maps" aria-selected="false" data-admin>Maps</button>
+      <button role="tab" data-tab="log" aria-selected="false" data-admin>Log</button>
+    </nav>
+
+    <div class="tab" id="tab-chat">
+      <div class="messenger">
+        <aside class="contacts">
+          <div class="contacts-head">
+            <input id="myname" maxlength="31" autocomplete="off" placeholder="your name">
+            <button class="ghost tiny" id="namesave" title="Play under this name; over the game, this reloads it">Save</button>
+          </div>
+          <label class="check">
+            <input type="checkbox" id="lowdetail">
+            Low detail (helps with many players)
+          </label>
+          <button class="ghost tiny block" id="resetstore"
+                  title="Delete the paks this browser has cached, if the game will not finish loading">Clear cached game files</button>
+          <div class="msg" id="namemsg"></div>
+          <ul class="contactlist" id="contactlist"></ul>
+        </aside>
+        <section class="thread">
+          <div class="thread-head">
+            <span id="threadname">Everyone</span>
+            <span class="tag" id="threadnote"></span>
+          </div>
+          <div class="bubbles" id="bubbles"><p class="empty">No messages yet.</p></div>
+          <div class="composer">
+            <input id="composetext" maxlength="140" autocomplete="off" placeholder="Message">
+            <button id="composesend">Send</button>
+          </div>
+          <div class="msg" id="chatmsg"></div>
+        </section>
+      </div>
+    </div>
+
+    <div class="tab" id="tab-stats" hidden>
+    <div class="cols">
+    <section class="panel span">
+    <h2>Leaderboard</h2>
+    <div id="statsplayers"><p class="empty">Nothing recorded yet.</p></div>
+    <p class="hint">Counted from the game log the server keeps, and held across restarts. Scores follow the name you play under, so keep the same one to keep your record.</p>
+    </section>
+    </div>
+    </div>
+
+    <div class="tab" id="tab-server" hidden>
+      <div class="cols">
+        <section class="panel">
+          <h2>Now playing</h2>
+          <div class="firstline"><p class="now" id="curmap">&hellip;</p></div>
+          <img class="shot" id="curshot" alt="" hidden>
+          <div class="noshot" id="curnoshot">no preview</div>
+          <p class="hint" id="curmeta"></p>
+        </section>
+
+        <section class="panel">
+          <h2>Change map</h2>
+          <div class="firstline"><select id="mapsel"></select></div>
+          <img class="shot above" id="pickshot" alt="" hidden>
+          <button id="mapgo">Load map</button>
+          <button class="ghost" id="restart">Restart server</button>
+          <div class="msg" id="mapmsg"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Announce</h2>
+          <div class="firstline">
+            <input id="saytext" autocomplete="off" placeholder="Message to players">
+          </div>
+          <button id="saygo">Send</button>
+          <div class="msg" id="saymsg"></div>
+          <h2 class="later">Join</h2>
+          <p class="hint" id="joinhint">Opens the game in a new tab.</p>
+          <button class="ghost" id="joinbtn">Join server</button>
+          <h2 class="later">Backup</h2>
+          <p class="hint">Settings, rotation, leaderboard and the console password, as one file.</p>
+          <div class="row tight">
+            <button class="ghost" id="exportbtn">Export</button>
+            <input type="file" id="importfile" accept="application/json,.json" hidden>
+            <button class="ghost" id="importbtn">Import...</button>
+            <button class="ghost" id="backupnow">Back up now</button>
+          </div>
+          <p class="hint" id="backuplist"></p>
+          <div class="msg" id="backupmsg"></div>
+        </section>
+      </div>
+    </div>
+
+    <div class="tab" id="tab-match" hidden>
+      <div class="cols">
+        <section class="panel span">
+          <h2>Presets</h2>
+          <div class="row tight">
+            <div><select id="preset"></select></div>
+            <button id="presetgo">Apply</button>
+          </div>
+          <p class="hint" id="presethint"></p>
+          <div class="msg" id="presetmsg"></div>
+        </section>
+        <section class="panel"><h2>Match rules</h2><div class="fields" id="rules"></div></section>
+        <section class="panel">
+          <h2>Players and slots</h2>
+          <div class="fields" id="slots"></div>
+          <p class="hint">Up to 64 slots, the engine limit, but at most 24 bots: past 26 or so the game module runs out of its own memory pool and the server dies, so the Add button only offers what fits. The browser, not the server, is what struggles with a crowd. Min players tops the server up with bots, which make way for real players. Reserved slots need a password; use Join to claim one when the server is full. Slot changes restart the server.</p>
+        </section>
+        <section class="panel">
+          <h2>Network</h2>
+          <div class="fields" id="network"></div>
+          <p class="hint">Tick rate is how often the server updates clients. At 20 that is once every 50ms, which alone reads as about 50ms of ping. 30-40 is smoother; the cost is server CPU.</p>
+        </section>
+        <section class="panel"><h2>Mutators</h2><div class="fields" id="mutators"></div></section>
+        <section class="panel span">
+          <h2>Identity</h2>
+          <div class="fields" id="identity"></div>
+          <div class="actions">
+            <button id="savesettings">Save settings</button>
+            <button class="ghost" id="reloadsettings">Reload</button>
+          </div>
+          <div class="msg" id="setmsg"></div>
+        </section>
+      </div>
+    </div>
+
+    <div class="tab" id="tab-players" hidden>
+      <div class="cols">
+        <section class="panel span">
+          <h2>Connected</h2>
+          <div id="players"><p class="empty">Loading...</p></div>
+          <div class="msg" id="playermsg"></div>
+        </section>
+        <div class="pair">
+          <section class="panel">
+            <h2>Bots</h2>
+            <div class="row tight">
+              <div><label for="botsel">Bot</label><select id="botsel"></select></div>
+              <div class="narrow"><label for="botskill">Skill</label>
+                <select id="botskill">
+                  <option value="1">1 easy</option>
+                  <option value="2">2</option>
+                  <option value="3" selected>3 normal</option>
+                  <option value="4">4</option>
+                  <option value="5">5 nightmare</option>
+                </select></div>
+              <div class="narrow"><label for="botcount">How many <span class="tag" id="botroom"></span></label>
+                <input id="botcount" type="number" min="1" value="1"></div>
+              <button id="botgo">Add</button>
+            </div>
+            <button class="ghost" id="botclear">Remove all bots</button>
+            <p class="hint">Kick removes one. To keep the server populated automatically, set Min players on the Match tab.</p>
+            <div class="msg" id="botmsg"></div>
+          </section>
+          <section class="panel">
+            <h2>Bans</h2>
+            <div class="row tight">
+              <div><label for="banip">IPv4 address</label><input id="banip" autocomplete="off" placeholder="192.168.0.50"></div>
+              <div><label for="banreason">Reason</label><input id="banreason" autocomplete="off" placeholder="optional; shown here"></div>
+              <div class="narrow"><label for="banhours">For</label><select id="banhours">
+                <option value="">good</option><option value="1">1 hour</option><option value="24">1 day</option>
+                <option value="168">1 week</option><option value="720">30 days</option>
+              </select></div>
+              <button id="bango">Ban</button>
+            </div>
+            <div id="banlist"><p class="empty">Nobody is banned.</p></div>
+            <p class="hint">Bans match the address, not the player, and only stop new connections - the Connected list above bans and kicks in one step. If everyone shows the same address, name your reverse proxy in TRUSTED_PROXIES so the server can see past it. Ban from the Connected list uses the reason and duration set here; a ban with an end is lifted by itself, and every ban is put back if the game server restarts.</p>
+            <div class="msg" id="banmsg"></div>
+          </section>
+        </div>
+      </div>
+
+    </div>
+    <div class="tab" id="tab-maps" hidden>
+      <div class="cols">
+        <section class="panel span">
+          <h2>Upload</h2>
+          <p class="hint">A map, or the game's own content. This server runs on Quake 3's <strong>demo</strong> assets - six bots and a handful of maps - so if you own the game, upload its <code>pak0.pk3</code> for all 31 stock maps and the full 32-bot roster. <code>pak0.pk3</code> to <code>pak8.pk3</code> are installed as-is; anything else is treated as a map and screened for textures this server does not have. Your files stay in this server's storage, never in the image - <code>EXTRA_PAKS</code> does the same from a URL.</p>
+          <div class="row tight">
+            <div><label for="pk3">.pk3 or .zip from this computer</label>
+              <input id="pk3" type="file" accept=".pk3,.zip,application/zip"></div>
+            <button id="upload" disabled>Upload</button>
+            <button class="ghost" id="uploadforce" disabled title="Install even if textures are missing">Anyway</button>
+          </div>
+          <p class="hint">A zip is unpacked and every pk3 inside it screened. A base pak is several hundred megabytes, so give it a minute. The server restarts when it lands, and every player downloads it once.</p>
+          <div class="msg" id="upmsg"></div>
+        </section>
+        <section class="panel span">
+          <h2>Install from lvlworld</h2>
+          <div class="row tight">
+            <div><label for="ref">Map id or URL</label>
+              <input id="ref" autocomplete="off" placeholder="2323 or lvlworld.com/review/id:2323"></div>
+            <button class="ghost" id="lookup">Look up</button>
+            <button id="install" disabled>Install</button>
+            <button class="ghost" id="force" disabled title="Install even if textures are missing">Anyway</button>
+          </div>
+          <div class="msg" id="instmsg"></div>
+        </section>
+        <section class="panel span">
+          <h2>Rotation <span id="rotcount" class="tag"></span></h2>
+          <ul class="rot" id="rotlist"></ul>
+          <div class="row tight spaced">
+            <div><select id="rotadd"></select></div>
+            <button class="ghost" id="rotaddbtn">Add</button>
+            <button id="rotsave">Save rotation</button>
+          </div>
+          <div class="row tight spaced">
+            <div><select id="rotpreset">
+              <option value="type">Every map for the current game type</option>
+              <option value="dm">Stock deathmatch (q3dm1 - q3dm19)</option>
+              <option value="tourney">Stock tourney (q3tourney1 - 6)</option>
+              <option value="ctf">Stock CTF (q3ctf1 - 4)</option>
+              <option value="all">Everything installed</option>
+            </select></div>
+            <button class="ghost" id="rotfill">Fill</button>
+            <button class="ghost" id="rotclear">Clear</button>
+          </div>
+          <p class="hint">Fill replaces the list with a preset - the stock ones appear once pak0.pk3 is supplied - and Save rotation keeps it.</p>
+          <div class="msg" id="rotmsg"></div>
+        </section>
+        <section class="panel span">
+          <h2>Installed <span id="usage" class="tag"></span></h2>
+          <div class="maplist" id="maplist"></div>
+          <div class="msg" id="mapsmsg"></div>
+        </section>
+      </div>
+    </div>
+
+    <div class="tab" id="tab-log" hidden>
+      <section class="panel" id="crashpanel">
+        <h2>Crashes <span id="crashcount" class="tag"></span></h2>
+        <p class="hint">What the game server said before it died - kept here because the restart that follows empties its log.</p>
+        <div id="crashes"></div>
+      </section>
+      <section class="panel" id="auditpanel">
+        <h2>Audit <span id="auditcount" class="tag"></span></h2>
+        <p class="hint">Every admin action and sign-in, newest first, with the address it came from.</p>
+        <div id="audit"></div>
+      </section>
+      <div id="logtab"><pre id="log">Loading...</pre></div>
+    </div>
+  </div>
+</div>
+<div id="confirm" hidden role="dialog" aria-modal="true" aria-labelledby="confirmtext">
+  <div id="confirmbox">
+    <p id="confirmtext"></p>
+    <div id="confirmacts">
+      <button type="button" class="ghost" id="confirmno">Cancel</button>
+      <button type="button" id="confirmyes">Confirm</button>
+    </div>
+  </div>
+</div>
+<script src="console.js"></script>
+</body>
+</html>

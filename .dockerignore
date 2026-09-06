@@ -3,3 +3,14 @@
 .gitignore
 README.md
 quakejs-docker.png
+
+# Prepared copies of licensed game content. These are supplied to a running
+# server by upload or by EXTRA_PAKS, never baked into the image - and sending
+# a few hundred megabytes to the daemon on every build is slow for nothing.
+dist
+docs
+quakejs
+
+# Host bytecode; the image compiles its own.
+**/__pycache__
+**/*.pyc

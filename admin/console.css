@@ -1,0 +1,177 @@
+:root {
+  --bg: #14100e; --panel: #1e1917; --line: #3a302b; --text: #e8ded6;
+  --muted: #9b8b80; --accent: #c8642a; --accent-dim: #8a4520;
+  --ok: #6f9f4a; --bad: #c4453a;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; padding: .9rem; background: var(--bg); color: var(--text);
+  font: 14px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  overflow: hidden; display: flex; flex-direction: column;
+}
+.wrap { max-width: 100%; margin: 0 auto; width: 100%;
+        flex: 1; min-height: 0; display: flex; flex-direction: column; }
+h2 { font-size: .72rem; margin: 0 0 .7rem; color: var(--muted);
+     letter-spacing: .14em; text-transform: uppercase; font-weight: 600; }
+.bar { display: flex; align-items: baseline; gap: .7rem; flex: none;
+       justify-content: flex-end; }
+.bar .spacer { margin-left: auto; }
+.status { color: var(--muted); font-size: .78rem; flex: none; margin: .15rem 0 .6rem; }
+.status b { color: var(--accent); font-weight: 600; }
+.tabs { display: flex; gap: .3rem; border-bottom: 1px solid var(--line); flex: none; }
+.tabs button { background: none; border: 0; border-bottom: 2px solid transparent;
+               color: var(--muted); cursor: pointer; font: inherit; font-size: .78rem;
+               padding: .4rem .7rem; text-transform: uppercase; letter-spacing: .1em; }
+.tabs button:hover { color: var(--text); }
+.tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.tab { flex: 1; min-height: 0; overflow: auto; padding-top: .75rem; }
+.cols { display: grid; gap: .7rem; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+        align-content: start; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: .85rem; }
+.panel.span { grid-column: 1 / -1; }
+/* A full-width row of its own. Panels placed directly in .cols cannot share
+   the width evenly, because a .span sibling occupies every track and auto-fit
+   only collapses tracks that are empty - so they end up one narrow track each. */
+.pair { grid-column: 1 / -1; display: grid; gap: .7rem;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+label { display: block; font-size: .68rem; color: var(--muted);
+        text-transform: uppercase; letter-spacing: .1em; margin: 0 0 .25rem; }
+select, input, button, textarea {
+  font: inherit; font-size: .85rem; background: #0f0c0b; color: var(--text);
+  border: 1px solid var(--line); border-radius: 4px; padding: .42rem .55rem;
+}
+select, input, textarea { width: 100%; }
+input:focus, select:focus, button:focus-visible, textarea:focus {
+  outline: 2px solid var(--accent); outline-offset: 1px; }
+button { background: var(--accent-dim); border-color: var(--accent); cursor: pointer; width: auto; }
+button:hover:not(:disabled) { background: var(--accent); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.ghost { background: transparent; border-color: var(--line); }
+button.ghost:hover:not(:disabled) { background: #2a2320; }
+button.tiny { font-size: .72rem; padding: .2rem .45rem; }
+.row { display: flex; gap: .5rem; align-items: end; margin-bottom: .6rem; }
+.row > div { flex: 1; min-width: 0; }
+.row.tight { margin-bottom: .35rem; }
+/* The three Server panels open with the same first row - a control, or the
+   name of the running map - so whatever follows it starts at the same height
+   in all three. A select and a text input differ by a few pixels on their own,
+   hence the explicit height. */
+.firstline { display: flex; align-items: center; margin-bottom: .5rem;
+             min-height: 2.15rem; }
+.firstline > select, .firstline > input { height: 2.15rem; }
+.firstline > .now { margin: 0; line-height: 1; }
+.fields { display: grid; gap: .55rem; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+          align-items: end; }
+.fields label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.now { font-size: 1.25rem; color: var(--accent); margin: 0; word-break: break-all; }
+.shot { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px;
+        border: 1px solid var(--line); background: #0f0c0b; display: block; }
+.noshot { color: var(--muted); font-size: .72rem; text-align: center; padding: 1.6rem .5rem;
+          border: 1px dashed var(--line); border-radius: 4px; }
+table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+th { text-align: left; color: var(--muted); font-weight: 600; font-size: .66rem;
+     text-transform: uppercase; letter-spacing: .08em; padding: 0 .4rem .3rem 0; }
+td { padding: .3rem .4rem .3rem 0; border-top: 1px solid var(--line); vertical-align: middle; }
+td:last-child, th:last-child { text-align: right; padding-right: 0; }
+.tag { font-size: .66rem; padding: .05rem .35rem; border-radius: 3px;
+       background: #2a2320; color: var(--muted); }
+.tag.bot { color: var(--accent); }
+#auditpanel { margin-bottom: .7rem; max-height: 40vh; overflow: auto; }
+.audit { width: 100%; border-collapse: collapse; font-size: .74rem; }
+.audit td { padding: .15rem .4rem; border-bottom: 1px solid var(--line); vertical-align: top; word-break: break-word; }
+.audit td.t { color: var(--muted); white-space: nowrap; }
+.audit td.ip { white-space: nowrap; }
+.audit td.a { color: var(--accent); white-space: nowrap; }
+.tag.shared { color: var(--bad); }
+pre { background: #0f0c0b; border: 1px solid var(--line); border-radius: 4px;
+      padding: .7rem; overflow: auto; font-size: .74rem; margin: 0;
+      white-space: pre-wrap; word-break: break-word; color: var(--muted); }
+#logtab { display: flex; flex-direction: column; height: 100%; }
+#logtab pre { flex: 1; min-height: 5rem; }
+.msg { margin-top: .6rem; padding: .5rem .6rem; border-radius: 4px; font-size: .78rem;
+       white-space: pre-wrap; word-break: break-word; display: none; }
+.msg.show { display: block; }
+.msg.ok { background: #1d2a16; border: 1px solid var(--ok); color: #cfe4bb; }
+.msg.err { background: #2c1614; border: 1px solid var(--bad); color: #f0c4c0; }
+.msg.work { background: #241d18; border: 1px solid var(--line); color: var(--muted); }
+.empty { color: var(--muted); font-size: .8rem; }
+.hint { color: var(--muted); font-size: .72rem; margin: .35rem 0 0; }
+.maplist { display: grid; gap: .6rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.mapcard { background: #0f0c0b; border: 1px solid var(--line); border-radius: 5px;
+           padding: .4rem; font-size: .74rem; }
+.mapcard .name { color: var(--text); word-break: break-all; }
+.mapcard .meta { color: var(--muted); font-size: .68rem; }
+.mapcard .acts { display: flex; gap: .3rem; margin-top: .35rem; }
+.rot { list-style: none; margin: 0; padding: 0; }
+.rot li { display: flex; align-items: center; gap: .4rem; padding: .25rem 0;
+          border-top: 1px solid var(--line); font-size: .8rem; }
+.rot li .n { color: var(--muted); font-size: .7rem; width: 1.4rem; }
+.rot li .grow { flex: 1; word-break: break-all; }
+#signin { margin: auto; width: min(340px, 100%); }
+#signin .field { margin-bottom: .6rem; }
+#signin button { width: 100%; }
+.linkish { background: none; border: 0; color: var(--muted); cursor: pointer;
+           font: inherit; font-size: .74rem; text-decoration: underline; padding: 0; }
+.linkish:hover { color: var(--text); }
+#confirm { position: fixed; inset: 0; z-index: 50; display: flex;
+           align-items: center; justify-content: center; padding: 1.5rem;
+           background: rgba(6,4,3,.7); }
+#confirm[hidden] { display: none !important; }
+#confirmbox { background: var(--panel); border: 1px solid var(--line);
+              border-radius: 8px; box-shadow: 0 18px 50px rgba(0,0,0,.55);
+              padding: 1rem 1.1rem; width: min(420px, 100%); }
+#confirmtext { margin: 0 0 .9rem; font-size: .88rem; white-space: pre-wrap; }
+#confirmacts { display: flex; gap: .5rem; justify-content: flex-end; }
+.messenger { display: grid; grid-template-columns: minmax(140px, 200px) 1fr; gap: .7rem;
+             flex: 1; width: 100%; min-width: 0; min-height: 0; }
+.contacts { background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+            padding: .6rem; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.contacts-head { display: flex; gap: .3rem; margin-bottom: .4rem; }
+.contacts-head input { min-width: 0; }
+.contactlist { list-style: none; margin: .3rem 0 0; padding: 0; overflow: auto; flex: 1; min-height: 0; }
+.contactlist li { padding: .35rem .45rem; border-radius: 4px; cursor: pointer;
+                  font-size: .8rem; display: flex; align-items: center; gap: .35rem; }
+.contactlist li:hover { background: #2a2320; }
+.contactlist li[aria-current="true"] { background: var(--accent-dim); color: #fff; }
+.contactlist .unread { margin-left: auto; background: var(--accent); color: #fff;
+                       border-radius: 999px; font-size: .62rem; padding: 0 .35rem; }
+.thread { background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+          display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.thread-head { padding: .55rem .75rem; border-bottom: 1px solid var(--line);
+               font-size: .78rem; letter-spacing: .1em; text-transform: uppercase;
+               color: var(--muted); display: flex; align-items: center; gap: .5rem; }
+.bubbles { flex: 1; min-height: 0; overflow: auto; padding: .6rem .75rem;
+           display: flex; flex-direction: column; gap: .35rem; }
+.bubble { max-width: 72%; padding: .35rem .55rem; border-radius: 9px; font-size: .8rem;
+          background: #0f0c0b; border: 1px solid var(--line); word-break: break-word; }
+.bubble .who { display: block; font-size: .62rem; color: var(--muted); margin-bottom: .1rem; }
+.bubble.mine { align-self: flex-end; background: var(--accent-dim); border-color: var(--accent); }
+.bubble.team { border-style: dashed; }
+.composer { display: flex; gap: .4rem; padding: .55rem; border-top: 1px solid var(--line); }
+.composer input { flex: 1; }
+[hidden] { display: none !important; }
+
+/* Layout and spacing that used to be inline. The page's policy forbids
+   inline styles, so every rule lives here. */
+#main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#tab-chat { display: flex; overflow: hidden; }
+.block { width: 100%; margin-bottom: .35rem; }
+.check { display: flex; align-items: center; gap: .35rem; text-transform: none;
+         letter-spacing: 0; font-size: .7rem; margin-bottom: .4rem; cursor: pointer; }
+.check input { width: auto; margin: 0; }
+.shot.above { margin-bottom: .5rem; }
+h2.later { margin-top: 1rem; }
+.actions { margin-top: .7rem; }
+.narrow { max-width: 7rem; }
+.row.spaced { margin-top: .5rem; }
+.auto { width: auto; }
+.empty.plain { cursor: default; }
+.check.after { margin: .3rem 0 0; }
+.bans { width: 100%; border-collapse: collapse; font-size: .78rem; }
+.bans td { padding: .2rem .4rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.bans td.t { color: var(--muted); white-space: nowrap; }
+#crashpanel { margin-bottom: .7rem; max-height: 40vh; overflow: auto; }
+#crashes details { margin-bottom: .4rem; }
+#crashes summary { cursor: pointer; font-size: .78rem; }
+#crashes pre { max-height: 30vh; overflow: auto; font-size: .7rem; margin: .3rem 0 0; }

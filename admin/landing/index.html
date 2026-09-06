@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuakeJS-Docker</title>
+<link rel="stylesheet" href="/landing.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1><a href="https://github.com/treyyoder/quakejs-docker">QuakeJS-Docker</a></h1>
+    <p class="sub">Quake III Arena, in the browser. Nothing to install.</p>
+    <p class="server muted" id="hostname" hidden></p>
+  </header>
+
+  <section class="hero">
+    <div class="shotbox">
+      <img id="shot" class="shot" alt="" hidden>
+      <div class="now">
+        <span class="label">Now playing</span>
+        <strong id="map">&hellip;</strong>
+      </div>
+    </div>
+    <div class="cta">
+      <label class="playas" for="name">Play as <input id="name" maxlength="31" autocomplete="nickname" placeholder="your name"></label>
+      <a class="join" id="join" href="/play.html">Join the game</a>
+      <p class="hint" id="joinhint">Opens the game in this tab, with your name. Press <kbd>`</kbd> in game for the console.</p>
+    </div>
+  </section>
+
+  <section class="cols" id="live">
+    <div class="panel">
+      <h2>On the server <span id="count" class="tag"></span></h2>
+      <ul id="players"><li class="muted">Nobody yet - be the first.</li></ul>
+    </div>
+    <div class="panel">
+      <h2>Leaderboard</h2>
+      <table id="board" hidden>
+        <thead><tr><th>Player</th><th>Kills</th><th>Deaths</th><th>K/D</th><th>Best</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p id="noboard" class="muted">No games recorded yet.</p>
+    </div>
+  </section>
+
+  <footer>
+    <a href="https://github.com/treyyoder/quakejs-docker">GitHub repository</a>
+    <a href="/admin/">Admin console</a>
+    <span id="foot" class="muted"></span>
+  </footer>
+</main>
+<script src="/landing.js"></script>
+</body>
+</html>
