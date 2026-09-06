@@ -944,8 +944,14 @@ ok "base image pinned by digest, node pinned per architecture, CI builds both an
 # tolerant of a failed write) until the tailer has recorded the note.
 deadline=$((SECONDS + 60))
 until api /api/crashes | grep -q '"reason": "smoke test crash"'; do
-	[ $SECONDS -lt $deadline ] || fail "the crash was not recorded"
-	docker exec -u root "$NAME" sh -c 'echo "----- Server Shutdown (Server crashed: smoke test crash" >> /tmp/q3.log' 2>/dev/null || true
+	if [ $SECONDS -ge $deadline ]; then
+		echo "--- crash-test diagnostics ---"
+		docker exec -u root "$NAME" sh -c 'id; ls -ld /tmp; ls -l /tmp/q3.log 2>&1; echo probe >> /tmp/q3.log && echo PROBE_WRITE_OK || echo PROBE_WRITE_FAIL' 2>&1
+		docker inspect "$NAME" --format "health={{.State.Health.Status}} running={{.State.Running}}"
+		api /api/crashes
+		fail "the crash was not recorded"
+	fi
+	docker exec -u root "$NAME" sh -c 'echo "----- Server Shutdown (Server crashed: smoke test crash" >> /tmp/q3.log' 2>&1 | sed 's/^/  inject: /' || true
 	sleep 2
 done
 api /api/crashes | python3 -c "import json,sys; c=json.load(sys.stdin)['crashes'][0]; assert c['tail'] and c['map'], c" || fail "the crash note lacks the log tail or the map"
