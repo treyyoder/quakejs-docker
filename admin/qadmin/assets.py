@@ -9,14 +9,17 @@ mtimes, because the console polls constantly and a pak is a zip to open.
 import hashlib
 import http.cookiejar
 import io
+import ipaddress
 import json
 import pathlib
 import re
+import socket
 import ssl
 import subprocess
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import zipfile
 import zlib
@@ -253,17 +256,66 @@ MIRROR_RETRY = 600.0     # a mirror that refused is tried last for this long
 _mirror_down = {}        # mirror key -> when it last refused
 
 
+def _assert_public_url(url):
+    """Refuse anything but a plain http(s) URL that resolves only to public
+    addresses - the SSRF guard on the map-download path.
+
+    The URLs fetched here come from lvlworld's own pages and its redirects to
+    mirror hosts, none of which we control, so a malicious or compromised
+    lvlworld must not be able to steer a fetch at loopback, at a private range,
+    or at the 169.254.169.254 cloud-metadata endpoint. Every hop is checked,
+    the first URL and each redirect (see _GuardedRedirectHandler).
+
+    It resolves the host and rejects it if any address is non-global. It does
+    not defend against a host that resolves public here and rebinds to private
+    before the socket connects (DNS rebinding); closing that needs pinning the
+    resolved address into the connection, which a game-map download does not
+    warrant.
+    """
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise ValueError(f"refusing to fetch {url!r}: not a plain http(s) URL")
+    try:
+        infos = socket.getaddrinfo(parsed.hostname, None, type=socket.SOCK_STREAM)
+    except socket.gaierror as exc:
+        raise ValueError(f"refusing to fetch {url!r}: {exc}")
+    for info in infos:
+        addr = ipaddress.ip_address(info[4][0].split("%")[0])   # drop any zone id
+        if isinstance(addr, ipaddress.IPv6Address) and addr.ipv4_mapped:
+            addr = addr.ipv4_mapped
+        if not addr.is_global:
+            raise ValueError(f"refusing to fetch {url!r}: {addr} is not a public address")
+
+
+class _GuardedRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Hold each redirect target to the same public-address rule, so a redirect
+    cannot reach somewhere the first URL was not allowed to."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        _assert_public_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def _fetch(url, referer=None, limit=None, jar=None, verify=True):
     """One GET. With a cookie jar the request belongs to a session; with
     verify off the transport's certificate is not checked - only ever for a
-    mirror download the page has published a sha256 for, see _mirror_blob."""
+    mirror download the page has published a sha256 for, see _mirror_blob.
+
+    The URL and every redirect it follows must resolve to a public address;
+    see _assert_public_url.
+    """
+    _assert_public_url(url)
     request = urllib.request.Request(url, headers={"User-Agent": config.UA})
     if referer:
         request.add_header("Referer", referer)
-    handlers = []
+    handlers = [_GuardedRedirectHandler()]
     if jar is not None:
         handlers.append(urllib.request.HTTPCookieProcessor(jar))
     if not verify:
+        # The FSS mirror serves an incomplete certificate chain; this path is
+        # taken only after a verified attempt failed and only when the page
+        # published a sha256, which is the real integrity check (see
+        # _mirror_blob). The SSRF guard above still applies.
         handlers.append(urllib.request.HTTPSHandler(context=ssl._create_unverified_context()))
     with urllib.request.build_opener(*handlers).open(request, timeout=120) as response:
         return response.read(limit) if limit else response.read()

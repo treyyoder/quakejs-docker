@@ -433,6 +433,37 @@ class BuildConfig(unittest.TestCase):
 
 
 # ------------------------------------------------------------------ assets
+class SsrfGuard(unittest.TestCase):
+    """The map-download path may only reach public addresses, on the first URL
+    and on every redirect - so lvlworld (or a compromised mirror it points at)
+    cannot steer a fetch at an internal service or the cloud-metadata endpoint."""
+
+    def test_public_ip_literals_pass(self):
+        from qadmin import assets
+        for url in ("https://8.8.8.8/x.pk3", "http://1.1.1.1/", "https://93.184.216.34/a"):
+            assets._assert_public_url(url)   # no raise
+
+    def test_internal_and_non_http_are_refused(self):
+        from qadmin import assets
+        for url in (
+            "http://169.254.169.254/latest/meta-data/",   # cloud metadata (link-local)
+            "http://127.0.0.1/x", "https://127.0.0.1/x",
+            "http://10.0.0.1/", "http://192.168.1.1/", "http://172.16.0.1/",
+            "http://[::1]/", "http://[fd00::1]/",          # v6 loopback / unique-local
+            "http://[::ffff:127.0.0.1]/",                  # v4-mapped loopback
+            "ftp://8.8.8.8/x", "file:///etc/passwd", "gopher://8.8.8.8/", "http:///nohost",
+        ):
+            with self.assertRaises(ValueError, msg=url):
+                assets._assert_public_url(url)
+
+    def test_a_redirect_to_an_internal_address_is_refused(self):
+        from qadmin import assets
+        handler = assets._GuardedRedirectHandler()
+        with self.assertRaises(ValueError):
+            handler.redirect_request(None, None, 302, "Found", {},
+                                     "http://169.254.169.254/latest/meta-data/")
+
+
 class BasePaks(unittest.TestCase):
     def test_the_games_own_paks_are_recognised_with_or_without_a_checksum(self):
         for name in ("pak0.pk3", "63455183-pak0.pk3", "12-pak8.pk3", "PAK1.PK3"):

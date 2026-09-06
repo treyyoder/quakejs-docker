@@ -131,6 +131,12 @@ def main():
     target_dir = served / game
     target_dir.mkdir(parents=True, exist_ok=True)
 
+    # EXTRA_PAKS is set by whoever runs the container, not by a request, so an
+    # internal address here is a deliberate choice - pulling a licensed pak0 off
+    # a LAN file server, say - not an SSRF. So the scheme is checked but the
+    # address is not; the public-only guard lives on the lvlworld path
+    # (qadmin/assets._assert_public_url), where the URLs come from untrusted
+    # pages and their redirects.
     for name, url, digest in parse(raw):
         if not NAME_RE.match(name):
             print(f"[paks] refusing suspicious name {name!r} from {url}", flush=True)
