@@ -939,15 +939,18 @@ ok "base image pinned by digest, node pinned per architecture, CI builds both an
 # The line the engine prints on its way down, appended to the console log: the
 # tailer keeps the log's tail before the watchdog's restart empties it. Late,
 # because that restart takes the game server away for a while.
-docker exec "$NAME" sh -c 'echo "----- Server Shutdown (Server crashed: smoke test crash" >> /tmp/q3.log'
-deadline=$((SECONDS + 20))
+# The same line also trips the watchdog, which restarts the server and empties
+# the log, so the write races the restart; re-inject each poll (as root, and
+# tolerant of a failed write) until the tailer has recorded the note.
+deadline=$((SECONDS + 60))
 until api /api/crashes | grep -q '"reason": "smoke test crash"'; do
 	[ $SECONDS -lt $deadline ] || fail "the crash was not recorded"
-	sleep 1
+	docker exec -u root "$NAME" sh -c 'echo "----- Server Shutdown (Server crashed: smoke test crash" >> /tmp/q3.log' 2>/dev/null || true
+	sleep 2
 done
 api /api/crashes | python3 -c "import json,sys; c=json.load(sys.stdin)['crashes'][0]; assert c['tail'] and c['map'], c" || fail "the crash note lacks the log tail or the map"
-deadline=$((SECONDS + 90))
-until [ -n "$(api /api/state | python3 -c "import json,sys; print(json.load(sys.stdin).get('map') or '')" 2>/dev/null)" ] && ! docker exec "$NAME" sh -c 'grep -q "Server crashed" /tmp/q3.log'; do
+deadline=$((SECONDS + 150))
+until [ -n "$(api /api/state | python3 -c "import json,sys; print(json.load(sys.stdin).get('map') or '')" 2>/dev/null)" ] && ! docker exec "$NAME" sh -c 'grep -q "Server crashed" /tmp/q3.log' 2>/dev/null; do
 	[ $SECONDS -lt $deadline ] || fail "the game server did not come back after the crash"
 	sleep 3
 done
