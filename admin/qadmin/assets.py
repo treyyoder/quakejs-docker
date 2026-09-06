@@ -8,15 +8,18 @@ mtimes, because the console polls constantly and a pak is a zip to open.
 
 import hashlib
 import http.cookiejar
+import ipaddress
 import io
 import json
 import pathlib
 import re
+import socket
 import ssl
 import subprocess
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import zipfile
 import zlib
@@ -253,10 +256,28 @@ MIRROR_RETRY = 600.0     # a mirror that refused is tried last for this long
 _mirror_down = {}        # mirror key -> when it last refused
 
 
+def _assert_public_url(url):
+    """Refuse anything but a plain http(s) URL whose host resolves only to
+    public addresses - blocks SSRF to loopback, link-local (including the
+    169.254.169.254 cloud metadata endpoint) and other internal ranges."""
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise ValueError(f"refusing to fetch {url!r}: not a plain http(s) URL")
+    try:
+        infos = socket.getaddrinfo(parsed.hostname, None)
+    except socket.gaierror as exc:
+        raise ValueError(f"refusing to fetch {url!r}: {exc}")
+    for info in infos:
+        addr = ipaddress.ip_address(info[4][0])
+        if not addr.is_global:
+            raise ValueError(f"refusing to fetch {url!r}: {addr} is not a public address")
+
+
 def _fetch(url, referer=None, limit=None, jar=None, verify=True):
     """One GET. With a cookie jar the request belongs to a session; with
     verify off the transport's certificate is not checked - only ever for a
     mirror download the page has published a sha256 for, see _mirror_blob."""
+    _assert_public_url(url)
     request = urllib.request.Request(url, headers={"User-Agent": config.UA})
     if referer:
         request.add_header("Referer", referer)
@@ -264,7 +285,7 @@ def _fetch(url, referer=None, limit=None, jar=None, verify=True):
     if jar is not None:
         handlers.append(urllib.request.HTTPCookieProcessor(jar))
     if not verify:
-        handlers.append(urllib.request.HTTPSHandler(context=ssl._create_unverified_context()))
+        handlers.append(urllib.request.HTTPSHandler(context=ssl.create_default_context()))
     with urllib.request.build_opener(*handlers).open(request, timeout=120) as response:
         return response.read(limit) if limit else response.read()
 
