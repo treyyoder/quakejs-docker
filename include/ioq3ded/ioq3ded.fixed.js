@@ -9595,7 +9595,14 @@ function copyTempDouble(ptr) {
   
   			var http = require('http');
   
-  			http.get(url, function (res) {
+  			// A fresh connection per request, not node's keep-alive agent (the default
+  			// since node 19). Apache drops an idle connection after KeepAliveTimeout (5s),
+  			// and between two downloads this thread is busy for as long as it takes to
+  			// unpack an installer or checksum every local pak - with a retail pak0, or on a
+  			// slower CPU such as a Raspberry Pi, past 5s. The next request then goes out on
+  			// the socket Apache already closed and dies with an unhandled 'socket hang up',
+  			// and the restart repeats the same checksums, so it can crash every time.
+  			http.get(url, { agent: false }, function (res) {
   				var buf = [];
   
   				res.on('data', function (data) {
